@@ -1,34 +1,20 @@
 import express, { type Express } from "express";
 import cors from "cors";
-import pinoHttp from "pino-http";
+import helmet from "helmet";
+import morgan from "morgan";
 import router from "./routes";
-import { logger } from "./lib/logger";
 
 const app: Express = express();
 
-app.use(
-  pinoHttp({
-    logger,
-    serializers: {
-      req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
-      },
-      res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
-      },
-    },
-  }),
-);
+app.use(helmet());
 app.use(cors());
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Mount at the root for the requested /health endpoint and under /api for
+// the workspace's existing API service path.
+app.use(router);
 app.use("/api", router);
 
 export default app;
