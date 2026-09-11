@@ -7,4 +7,135 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Add application models below as the project grows.
+// ---------- ENUMS ----------
+enum Role {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum ConsultationStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+// ---------- CORE TABLES ----------
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  mfaEnabled   Boolean  @default(false)
+  mfaSecret    String? // encrypted at rest
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile   Profile?
+  doctor    Doctor?
+  auditLogs AuditLog[]
+
+  @@index([email])
+}
+
+model Profile {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id])
+  fullName  String
+  phone     String?
+  address   String?
+  dob       DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model Doctor {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  specialization String
+  licenseNo      String   @unique
+  bio            String?
+  consultFee     Decimal  @db.Decimal(10, 2)
+  createdAt      DateTime @default(now())
+
+  slots         AvailabilitySlot[]
+  consultations Consultation[]
+
+  @@index([specialization])
+}
+
+model AvailabilitySlot {
+  id        String   @id @default(uuid())
+  doctorId  String
+  doctor    Doctor   @relation(fields: [doctorId], references: [id])
+  startTime DateTime
+  endTime   DateTime
+  isBooked  Boolean  @default(false)
+  version   Int      @default(0) // optimistic-safety, extra layer
+  createdAt DateTime @default(now())
+
+  consultation Consultation?
+
+  @@unique([doctorId, startTime]) // one doctor cannot have duplicate start times
+  @@index([doctorId, startTime])
+}
+
+model Consultation {
+  id             String             @id @default(uuid())
+  patientId      String
+  doctorId       String
+  doctor         Doctor             @relation(fields: [doctorId], references: [id])
+  slotId         String             @unique
+  slot           AvailabilitySlot   @relation(fields: [slotId], references: [id])
+  status         ConsultationStatus @default(SCHEDULED)
+  idempotencyKey String             @unique // prevents duplicate booking requests
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  prescription Prescription?
+  payment      Payment?
+
+  @@index([patientId])
+  @@index([doctorId, status])
+}
+
+model Prescription {
+  id             String       @id @default(uuid())
+  consultationId String       @unique
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  content        String       @db.Text
+  createdAt      DateTime     @default(now())
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  consultationId String        @unique
+  consultation   Consultation  @relation(fields: [consultationId], references: [id])
+  amount         Decimal       @db.Decimal(10, 2)
+  status         PaymentStatus @default(PENDING)
+  gatewayRef     String?
+  createdAt      DateTime      @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String // e.g. "BOOKING_CREATED", "PRESCRIPTION_ISSUED"
+  entity    String // e.g. "Consultation"
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entity, entityId])
+}
