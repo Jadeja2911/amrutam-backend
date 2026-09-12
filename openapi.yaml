@@ -1,0 +1,359 @@
+openapi: 3.0.3
+info:
+  title: Amrutam Telemedicine Backend API
+  version: 1.0.0
+  description: >
+    API for user authentication, doctor availability, consultation booking,
+    prescriptions, search, and admin analytics.
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+tags:
+  - name: Auth
+  - name: Availability
+  - name: Bookings
+  - name: Consultations
+  - name: Doctors
+  - name: Admin
+
+paths:
+  /health:
+    get:
+      tags: [Auth]
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/auth/signup:
+    post:
+      tags: [Auth]
+      summary: Create a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, role]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                role:
+                  type: string
+                  enum: [PATIENT, DOCTOR, ADMIN]
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  email:
+                    type: string
+        '400':
+          description: Missing or invalid fields
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate and receive a JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Invalid credentials
+
+  /api/availability:
+    post:
+      tags: [Availability]
+      summary: Create an availability slot (doctor only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [startTime, endTime]
+              properties:
+                startTime:
+                  type: string
+                  format: date-time
+                endTime:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Slot created
+        '400':
+          description: Invalid time range
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not a doctor
+        '404':
+          description: No doctor record for this user
+
+  /api/availability/{doctorId}:
+    get:
+      tags: [Availability]
+      summary: List a doctor's open future slots (public)
+      parameters:
+        - name: doctorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of open slots
+
+  /api/bookings:
+    post:
+      tags: [Bookings]
+      summary: Book an availability slot (patient only, idempotent)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [slotId, idempotencyKey]
+              properties:
+                slotId:
+                  type: string
+                idempotencyKey:
+                  type: string
+                  description: Client-generated key to make retries safe
+      responses:
+        '201':
+          description: Consultation created (or existing one returned for a repeated idempotencyKey)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consultation'
+        '400':
+          description: Missing required fields
+        '401':
+          description: Not authenticated
+        '404':
+          description: Slot not found
+        '409':
+          description: Slot already booked
+
+  /api/consultations/{id}:
+    get:
+      tags: [Consultations]
+      summary: Get a consultation (patient or assigned doctor only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Consultation with prescription if present
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized to view this consultation
+        '404':
+          description: Not found
+
+  /api/consultations/{id}/complete:
+    patch:
+      tags: [Consultations]
+      summary: Mark a consultation as completed (assigned doctor only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Consultation marked completed
+        '403':
+          description: Not the assigned doctor
+        '409':
+          description: Invalid status transition
+
+  /api/consultations/{id}/cancel:
+    patch:
+      tags: [Consultations]
+      summary: Cancel a consultation and release the slot
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Consultation cancelled, slot released
+        '409':
+          description: Invalid status transition
+
+  /api/consultations/{id}/prescription:
+    post:
+      tags: [Consultations]
+      summary: Attach a prescription (assigned doctor only, after completion)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+      responses:
+        '201':
+          description: Prescription created
+        '409':
+          description: Consultation not completed yet
+
+  /api/doctors:
+    get:
+      tags: [Doctors]
+      summary: Search and filter doctors (public)
+      parameters:
+        - name: specialization
+          in: query
+          schema:
+            type: string
+        - name: minFee
+          in: query
+          schema:
+            type: number
+        - name: maxFee
+          in: query
+          schema:
+            type: number
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Paginated list of doctors
+
+  /api/admin/summary:
+    get:
+      tags: [Admin]
+      summary: Aggregate platform metrics (admin only — RBAC enforcement pending, see SECURITY.md)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Summary metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalUsers:
+                    type: integer
+                  totalDoctors:
+                    type: integer
+                  totalConsultations:
+                    type: integer
+                  consultationsByStatus:
+                    type: array
+                    items:
+                      type: object
+                  totalRevenue:
+                    type: number
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Consultation:
+      type: object
+      properties:
+        id:
+          type: string
+        patientId:
+          type: string
+        doctorId:
+          type: string
+        slotId:
+          type: string
+        status:
+          type: string
+          enum: [SCHEDULED, COMPLETED, CANCELLED, NO_SHOW]
+        idempotencyKey:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
