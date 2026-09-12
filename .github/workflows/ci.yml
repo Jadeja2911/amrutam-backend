@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: amrutam_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: artifacts/api-server
+
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/amrutam_test
+      JWT_SECRET: ci-test-secret-do-not-use-in-production
+      PORT: 3000
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Approve build scripts (Prisma native binaries)
+        run: pnpm approve-builds --all || true
+
+      - name: Type-check
+        run: pnpm run typecheck
+
+      - name: Push database schema
+        run: npx prisma db push
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Start server in background
+        run: |
+          nohup pnpm run start > server.log 2>&1 &
+          echo "Waiting for server to become ready..."
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:3000/health > /dev/null; then
+              echo "Server is up"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Run tests
+        run: node --test tests/api.test.js
+
+      - name: Show server logs on failure
+        if: failure()
+        run: cat server.log || true
+
+      - name: Audit dependencies (non-blocking)
+        run: pnpm audit --audit-level=high || true
