@@ -11,6 +11,8 @@ import authRoutes from "./routes/authRoutes.js";
 import availabilityRoutes from "./routes/availabilityRoutes.js";
 // @ts-expect-error The consultation router is intentionally a CommonJS JavaScript module.
 import consultationRoutes from "./routes/consultationRoutes.js";
+// @ts-expect-error The search router is intentionally a CommonJS module
+import searchRoutes from "./routes/searchRoutes.js";
 
 const app: Express = express();
 
@@ -28,5 +30,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/consultations", consultationRoutes);
+app.use("/api/doctors", searchRoutes);
 
 export default app;
