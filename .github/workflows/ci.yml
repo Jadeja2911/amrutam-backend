@@ -76,7 +76,7 @@ jobs:
           done
 
       - name: Run tests
-        run: node --test tests/api.test.js
+        run: node --test tests/api.test.cjs
 
       - name: Show server logs on failure
         if: failure()
