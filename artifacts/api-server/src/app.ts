@@ -5,6 +5,8 @@ import morgan from "morgan";
 import router from "./routes";
 // @ts-expect-error The booking router is intentionally a CommonJS JavaScript module.
 import bookingRoutes from "./routes/bookingRoutes.js";
+// @ts-expect-error The auth router is intentionally a CommonJS JavaScript module.
+import authRoutes from "./routes/authRoutes.js";
 
 const app: Express = express();
 
@@ -18,6 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 // the workspace's existing API service path.
 app.use(router);
 app.use("/api", router);
+app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
 
 export default app;
