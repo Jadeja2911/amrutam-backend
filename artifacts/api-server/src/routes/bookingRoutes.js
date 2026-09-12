@@ -1,20 +1,21 @@
 const express = require('express');
+const { authMiddleware, requireRole } = require('../middleware/auth.js');
 const { bookSlot } = require('../services/bookingService.js');
 
 const router = express.Router();
 
-router.post('/', async (req, res) => {
-  const { patientId, slotId, idempotencyKey } = req.body || {};
+router.post('/', authMiddleware, requireRole('PATIENT'), async (req, res) => {
+  const { slotId, idempotencyKey } = req.body || {};
 
-  if (!patientId || !slotId || !idempotencyKey) {
+  if (!slotId || !idempotencyKey) {
     return res.status(400).json({
-      error: 'patientId, slotId, and idempotencyKey are required',
+      error: 'slotId and idempotencyKey are required',
     });
   }
 
   try {
     const consultation = await bookSlot({
-      patientId,
+      patientId: req.user.userId,
       slotId,
       idempotencyKey,
     });
