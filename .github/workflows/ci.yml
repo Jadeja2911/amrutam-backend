@@ -64,7 +64,7 @@ jobs:
         run: pnpm run build
 
       - name: Build Docker image
-        run: docker build -f artifacts/api-server/Dockerfile -t amrutam-backend:ci ..
+        run: docker build -f Dockerfile -t amrutam-backend:ci ../..
 
       - name: Start server in background
         run: |
