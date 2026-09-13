@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const { enqueue } = require('./jobQueue');
 const prisma = new PrismaClient();
 
 async function bookSlot({ patientId, slotId, idempotencyKey }) {
@@ -38,6 +39,8 @@ async function bookSlot({ patientId, slotId, idempotencyKey }) {
         entityId: consultation.id,
       },
     });
+
+    enqueue('SEND_BOOKING_CONFIRMATION', { consultationId: consultation.id, patientId: consultation.patientId });
 
     return consultation;
   }, {
