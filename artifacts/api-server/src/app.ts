@@ -15,6 +15,8 @@ import consultationRoutes from "./routes/consultationRoutes.js";
 import searchRoutes from "./routes/searchRoutes.js";
 // @ts-expect-error The analytics router is intentionally a CommonJS module
 import analyticsRoutes from "./routes/analyticsRoutes.js";
+// @ts-expect-error The observability middleware is intentionally a CommonJS module
+import { requestLogger, metricsHandler } from "./middleware/observability.js";
 
 const app: Express = express();
 
@@ -23,6 +25,7 @@ app.use(cors());
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(requestLogger);
 
 // Mount at the root for the requested /health endpoint and under /api for
 // the workspace's existing API service path.
@@ -34,5 +37,6 @@ app.use("/api/availability", availabilityRoutes);
 app.use("/api/consultations", consultationRoutes);
 app.use("/api/doctors", searchRoutes);
 app.use("/api/admin", analyticsRoutes);
+app.get("/metrics", metricsHandler);
 
 export default app;
