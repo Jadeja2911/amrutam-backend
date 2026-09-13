@@ -9,7 +9,8 @@ RUN npm install -g pnpm@9
 
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY artifacts/api-server/package.json ./artifacts/api-server/package.json
-COPY artifacts/api-server/prisma ./artifacts/api-server/prisma
+COPY lib ./lib
+COPY scripts ./scripts
 RUN pnpm install --frozen-lockfile
 
 COPY artifacts/api-server ./artifacts/api-server
