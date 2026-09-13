@@ -1,10 +1,11 @@
 const express = require('express');
 const { authMiddleware, requireRole } = require('../middleware/auth.js');
 const { bookSlot } = require('../services/bookingService.js');
+const { validate, bookingSchema } = require('../middleware/validation.js');
 
 const router = express.Router();
 
-router.post('/', authMiddleware, requireRole('PATIENT'), async (req, res) => {
+router.post('/', authMiddleware, requireRole('PATIENT'), validate(bookingSchema), async (req, res) => {
   const { slotId, idempotencyKey } = req.body || {};
 
   if (!slotId || !idempotencyKey) {

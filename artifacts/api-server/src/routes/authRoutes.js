@@ -2,12 +2,13 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
+const { validate, signupSchema, loginSchema } = require('../middleware/validation.js');
 
 const prisma = new PrismaClient();
 const router = express.Router();
 const allowedRoles = new Set(['PATIENT', 'DOCTOR', 'ADMIN']);
 
-router.post('/signup', async (req, res) => {
+router.post('/signup', validate(signupSchema), async (req, res) => {
   const { email, password, role } = req.body || {};
 
   if (!email || !password || !role) {
@@ -46,7 +47,7 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', validate(loginSchema), async (req, res) => {
   const { email, password } = req.body || {};
 
   if (!email || !password) {
