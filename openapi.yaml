@@ -300,6 +300,56 @@ paths:
         '200':
           description: Paginated list of doctors
 
+  /api/payments:
+    post:
+      tags: [Payments]
+      summary: Record a payment for a consultation (idempotent, stub gateway integration)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [consultationId, amount, idempotencyKey]
+              properties:
+                consultationId:
+                  type: string
+                amount:
+                  type: number
+                idempotencyKey:
+                  type: string
+      responses:
+        '201':
+          description: Payment recorded (or existing one returned for a repeated idempotencyKey)
+        '400':
+          description: Missing required fields
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not the patient on this consultation
+        '404':
+          description: Consultation not found
+
+  /api/payments/{consultationId}:
+    get:
+      tags: [Payments]
+      summary: Get payment status for a consultation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: consultationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment record
+        '404':
+          description: No payment found for this consultation
+
   /api/admin/summary:
     get:
       tags: [Admin]

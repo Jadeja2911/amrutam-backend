@@ -18,6 +18,8 @@ import analyticsRoutes from "./routes/analyticsRoutes.js";
 // @ts-expect-error The observability middleware is intentionally a CommonJS module
 import { requestLogger, metricsHandler } from "./middleware/observability.js";
 import rateLimit from "express-rate-limit";
+// @ts-expect-error The payment router is intentionally a CommonJS module
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 const app: Express = express();
 
@@ -50,6 +52,7 @@ app.use(router);
 app.use("/api", router);
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/bookings", bookingLimiter, bookingRoutes);
+app.use("/api/payments", bookingLimiter, paymentRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/consultations", consultationRoutes);
 app.use("/api/doctors", searchRoutes);
