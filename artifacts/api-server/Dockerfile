@@ -11,7 +11,7 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY artifacts/api-server/package.json ./artifacts/api-server/package.json
 COPY lib ./lib
 COPY scripts ./scripts
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 COPY artifacts/api-server ./artifacts/api-server
 RUN pnpm --filter ./artifacts/api-server run build
