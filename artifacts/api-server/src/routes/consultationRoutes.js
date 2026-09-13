@@ -74,6 +74,8 @@ router.patch(
         data: { status: 'COMPLETED' },
       });
 
+      await prisma.auditLog.create({ data: { userId: req.user.userId, action: 'CONSULTATION_COMPLETED', entity: 'Consultation', entityId: updatedConsultation.id } });
+
       return res.status(200).json(updatedConsultation);
     } catch (error) {
       return sendRouteError(res, error);
@@ -113,6 +115,8 @@ router.patch('/:id/cancel', authMiddleware, async (req, res) => {
         where: { id: currentConsultation.slotId },
         data: { isBooked: false },
       });
+
+        await tx.auditLog.create({ data: { userId: req.user.userId, action: 'CONSULTATION_CANCELLED', entity: 'Consultation', entityId: updated.id } });
 
       return updated;
     });
@@ -158,6 +162,8 @@ router.post(
           content,
         },
       });
+
+      await prisma.auditLog.create({ data: { userId: req.user.userId, action: 'PRESCRIPTION_CREATED', entity: 'Prescription', entityId: prescription.id } });
 
       return res.status(201).json(prescription);
     } catch (error) {

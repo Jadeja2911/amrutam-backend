@@ -63,6 +63,9 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      - name: Build Docker image
+        run: docker build -t amrutam-backend:ci .
+
       - name: Start server in background
         run: |
           nohup pnpm run start > server.log 2>&1 &
