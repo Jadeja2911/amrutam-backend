@@ -120,6 +120,7 @@ Postman, Swagger UI, or Insomnia.
 | `pnpm run start` | Run the compiled server |
 | `pnpm run dev` | Build + start in one step |
 | `pnpm run typecheck` | Type-check without emitting |
+| `node --test tests/api.test.cjs` | Run integration tests (server must be running) |
 | `npx prisma db push` | Sync schema to the database (no migration history) |
 | `npx prisma migrate deploy` | Apply tracked migrations (production) |
 
