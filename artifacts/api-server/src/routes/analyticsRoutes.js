@@ -1,9 +1,10 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
+const { authMiddleware, requireRole } = require('../middleware/auth.js');
 const router = express.Router();
 const prisma = new PrismaClient();
 
-router.get('/summary', async (req, res) => {
+router.get('/summary', authMiddleware, requireRole('ADMIN'), async (req, res) => {
   try {
     const [totalUsers, totalDoctors, totalConsultations, consultationsByStatus, totalRevenue] = await Promise.all([
       prisma.user.count(),

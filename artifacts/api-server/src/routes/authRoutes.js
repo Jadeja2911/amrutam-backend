@@ -9,7 +9,7 @@ const { setupMfa, verifyMfaSetup, verifyMfaToken } = require('../middleware/mfa.
 const prisma = new PrismaClient();
 const router = express.Router();
 
-const allowedRoles = new Set(['PATIENT', 'DOCTOR', 'ADMIN']);
+const allowedRoles = new Set(['PATIENT', 'DOCTOR']);
 
 router.post('/signup', validate(signupSchema), async (req, res) => {
   const { email, password, role } = req.body || {};
@@ -22,7 +22,7 @@ router.post('/signup', validate(signupSchema), async (req, res) => {
 
   if (!allowedRoles.has(role)) {
     return res.status(400).json({
-      error: 'role must be PATIENT, DOCTOR, or ADMIN',
+      error: 'role must be PATIENT or DOCTOR',
     });
   }
 

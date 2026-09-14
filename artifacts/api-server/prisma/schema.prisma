@@ -39,9 +39,10 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  profile   Profile?
-  doctor    Doctor?
-  auditLogs AuditLog[]
+  profile                Profile?
+  doctor                 Doctor?
+  auditLogs              AuditLog[]
+  consultationsAsPatient Consultation[] @relation("PatientConsultations")
 
   @@index([email])
 }
@@ -92,6 +93,7 @@ model AvailabilitySlot {
 model Consultation {
   id             String             @id @default(uuid())
   patientId      String
+  patient        User               @relation("PatientConsultations", fields: [patientId], references: [id])
   doctorId       String
   doctor         Doctor             @relation(fields: [doctorId], references: [id])
   slotId         String             @unique

@@ -353,7 +353,7 @@ paths:
   /api/admin/summary:
     get:
       tags: [Admin]
-      summary: Aggregate platform metrics (admin only — RBAC enforcement pending, see SECURITY.md)
+      summary: Aggregate platform metrics (admin only, RBAC enforced)
       security:
         - bearerAuth: []
       responses:
